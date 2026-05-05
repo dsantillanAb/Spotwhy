@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using Timer = System.Timers.Timer;
 
 namespace SpotWhy;
@@ -17,6 +18,7 @@ public partial class MainWindow : Window
     private readonly HotkeyService _hotkeyService;
     private readonly SearchService _searchService;
     private readonly Timer _memoryTimer;
+    private readonly DispatcherTimer _debounceTimer;
     private bool _isVisible;
     private AppTheme _currentTheme;
     private const int BarHeight = 52;
@@ -30,11 +32,20 @@ public partial class MainWindow : Window
         _hotkeyService = new HotkeyService(this);
         _searchService = new SearchService();
 
+        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        _debounceTimer.Tick += DebounceTimer_Tick;
+
         _memoryTimer = new Timer(3000);
         _memoryTimer.Elapsed += (s, e) => Dispatcher.Invoke(UpdateMemoryDisplay);
         _memoryTimer.Start();
 
         Loaded += OnLoaded;
+    }
+
+    private void DebounceTimer_Tick(object? sender, EventArgs e)
+    {
+        _debounceTimer.Stop();
+        PerformSearch();
     }
 
     private void UpdateMemoryDisplay()
@@ -166,31 +177,43 @@ public partial class MainWindow : Window
         BeginAnimation(OpacityProperty, fadeOut);
     }
 
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+{
+    var query = SearchBox.Text;
+    PlaceholderText.Visibility = string.IsNullOrEmpty(query) ? Visibility.Visible : Visibility.Collapsed;
+
+    if (string.IsNullOrWhiteSpace(query))
     {
-        var query = SearchBox.Text;
-        PlaceholderText.Visibility = string.IsNullOrEmpty(query) ? Visibility.Visible : Visibility.Collapsed;
-
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            ResultsList.ItemsSource = null;
-            EmptyStateText.Visibility = Visibility.Visible;
-            AnimateHeight(BarHeight);
-            return;
-        }
-
-        EmptyStateText.Visibility = Visibility.Collapsed;
-
-        var results = _searchService.Search(query);
-        ResultsList.ItemsSource = results;
-
-        if (results.Count > 0)
-            ResultsList.SelectedIndex = 0;
-
-        var listHeight = Math.Min(results.Count, MaxListItems) * ItemHeight;
-        var totalHeight = BarHeight + (results.Count > 0 ? listHeight + 12 : 0);
-        AnimateHeight(Math.Min(totalHeight, MaxHeight));
+        _debounceTimer.Stop();
+        ResultsList.ItemsSource = null;
+        EmptyStateText.Visibility = Visibility.Visible;
+        AnimateHeight(BarHeight);
+        return;
     }
+
+    EmptyStateText.Visibility = Visibility.Collapsed;
+    _debounceTimer.Start();
+}
+
+private void PerformSearch()
+{
+    var query = SearchBox.Text;
+    if (string.IsNullOrWhiteSpace(query))
+        return;
+
+    var results = _searchService.Search(query);
+    foreach (var result in results)
+        result.Query = query;
+
+    ResultsList.ItemsSource = results;
+
+    if (results.Count > 0)
+        ResultsList.SelectedIndex = 0;
+
+    var listHeight = Math.Min(results.Count, MaxListItems) * ItemHeight;
+    var totalHeight = BarHeight + (results.Count > 0 ? listHeight + 12 : 0);
+    AnimateHeight(Math.Min(totalHeight, MaxHeight));
+}
 
     private void AnimateHeight(double targetHeight)
     {

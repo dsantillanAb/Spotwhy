@@ -264,121 +264,153 @@ public class SearchService : IDisposable
         return null;
     }
 
-    public List<SearchResult> Search(string query)
+public List<SearchResult> Search(string query)
+{
+    if (string.IsNullOrWhiteSpace(query))
     {
-        if (string.IsNullOrWhiteSpace(query))
-            return GetFrequentApps();
-
-        _currentCts?.Cancel();
-        _currentCts = new CancellationTokenSource();
-        var token = _currentCts.Token;
-
-        var lowerQuery = query.ToLowerInvariant();
-        var results = new ConcurrentBag<SearchResult>();
-
-        // Apps from cache
-        SearchApps(lowerQuery, results);
-
-        // Files & folders via Everything or fallback
-        if (_everything?.IsAvailable == true)
-        {
-            var everythingResults = _everything.Search(query);
-            foreach (var r in everythingResults)
-                results.Add(r);
-        }
-        else
-        {
-            var sw = Stopwatch.StartNew();
-            var folders = GetSearchFolders();
-
-            Parallel.ForEach(folders, folder =>
-            {
-                if (token.IsCancellationRequested) return;
-                if (!Directory.Exists(folder)) return;
-
-                try
-                {
-                    foreach (var entry in Directory.EnumerateFileSystemEntries(folder, "*" + query + "*", new EnumerationOptions
-                    {
-                        IgnoreInaccessible = true,
-                        MatchCasing = MatchCasing.CaseInsensitive,
-                        RecurseSubdirectories = true,
-                        MaxRecursionDepth = 2,
-                        ReturnSpecialDirectories = false
-                    }))
-                    {
-                        if (token.IsCancellationRequested || sw.ElapsedMilliseconds > 1500) return;
-
-                        var name = Path.GetFileName(entry);
-                        var isDir = (File.GetAttributes(entry) & FileAttributes.Directory) == FileAttributes.Directory;
-
-                        results.Add(new SearchResult
-                        {
-                            Name = name,
-                            Path = entry,
-                            Type = isDir ? SearchResultType.Folder : SearchResultType.File,
-                            Icon = GetIconForPath(entry)
-                        });
-                    }
-                }
-                catch { }
-            });
-        }
-
-        return results
-            .OrderByDescending(r => r.Type == SearchResultType.Application ? 1 : 0)
-            .ThenByDescending(r => _usage.GetUsage(r.Path))
-            .ThenBy(r => r.Name)
-            .Take(24)
-            .ToList();
+        var frequent = GetFrequentApps();
+        return frequent;
     }
 
-    private List<SearchResult> GetFrequentApps()
+    _currentCts?.Cancel();
+    _currentCts = new CancellationTokenSource();
+    var token = _currentCts.Token;
+
+    var lowerQuery = query.ToLowerInvariant();
+    var results = new ConcurrentBag<SearchResult>();
+
+    // Apps from cache
+    SearchApps(lowerQuery, results);
+
+    // Files & folders via Everything or fallback
+    if (_everything?.IsAvailable == true)
     {
-        var top = _usage.GetTopUsed(12);
-        var results = new List<SearchResult>();
+        var everythingResults = _everything.Search(query);
+        foreach (var r in everythingResults)
+            results.Add(r);
+    }
+    else
+    {
+        var sw = Stopwatch.StartNew();
+        var folders = GetSearchFolders();
 
-        foreach (var (key, count) in top)
+        Parallel.ForEach(folders, folder =>
         {
-            var app = _appCache.FirstOrDefault(a =>
-                a.Path.Equals(key, StringComparison.OrdinalIgnoreCase));
-            if (app != null)
-                results.Add(app);
-        }
+            if (token.IsCancellationRequested) return;
+            if (!Directory.Exists(folder)) return;
 
-        // Fill with remaining apps alphabetically if not enough
-        if (results.Count < 8)
-        {
-            var existing = new HashSet<string>(results.Select(r => r.Path), StringComparer.OrdinalIgnoreCase);
-            foreach (var app in _appCache.OrderBy(a => a.Name))
+            try
             {
-                if (!existing.Contains(app.Path))
+                foreach (var entry in Directory.EnumerateFileSystemEntries(folder, "*" + query + "*", new EnumerationOptions
                 {
-                    results.Add(app);
-                    existing.Add(app.Path);
-                    if (results.Count >= 12) break;
+                    IgnoreInaccessible = true,
+                    MatchCasing = MatchCasing.CaseInsensitive,
+                    RecurseSubdirectories = true,
+                    MaxRecursionDepth = 2,
+                    ReturnSpecialDirectories = false
+                }))
+                {
+                    if (token.IsCancellationRequested || sw.ElapsedMilliseconds > 1500) return;
+
+                    var name = Path.GetFileName(entry);
+                    var isDir = (File.GetAttributes(entry) & FileAttributes.Directory) == FileAttributes.Directory;
+
+                    results.Add(new SearchResult
+                    {
+                        Name = name,
+                        Path = entry,
+                        Type = isDir ? SearchResultType.Folder : SearchResultType.File,
+                        Icon = GetIconForPath(entry),
+                        Query = query
+                    });
                 }
             }
-        }
-
-        return results.Take(12).ToList();
+            catch { }
+        });
     }
+
+    return results
+        .Select(r => { r.Query = query; return r; })
+        .OrderByDescending(r => r.Type == SearchResultType.Application ? 1 : 0)
+        .ThenByDescending(r => _usage.GetUsage(r.Path))
+        .ThenBy(r => r.Name)
+        .Take(24)
+        .ToList();
+}
+
+private List<SearchResult> GetFrequentApps()
+{
+    var top = _usage.GetTopUsed(12);
+    var results = new List<SearchResult>();
+
+    foreach (var (key, count) in top)
+    {
+        var app = _appCache.FirstOrDefault(a =>
+            a.Path.Equals(key, StringComparison.OrdinalIgnoreCase));
+        if (app != null)
+        {
+            var appCopy = new SearchResult
+            {
+                Name = app.Name,
+                Path = app.Path,
+                Type = app.Type,
+                Icon = app.Icon,
+                Query = ""
+            };
+            results.Add(appCopy);
+        }
+    }
+
+    // Fill with remaining apps alphabetically if not enough
+    if (results.Count < 8)
+    {
+        var existing = new HashSet<string>(results.Select(r => r.Path), StringComparer.OrdinalIgnoreCase);
+        foreach (var app in _appCache.OrderBy(a => a.Name))
+        {
+            if (!existing.Contains(app.Path))
+            {
+                var appCopy = new SearchResult
+                {
+                    Name = app.Name,
+                    Path = app.Path,
+                    Type = app.Type,
+                    Icon = app.Icon,
+                    Query = ""
+                };
+                results.Add(appCopy);
+                existing.Add(app.Path);
+                if (results.Count >= 12) break;
+            }
+        }
+    }
+
+    return results.Take(12).ToList();
+}
 
     public void TrackOpen(SearchResult result)
     {
         _usage.TrackOpen(result.Path);
     }
 
-    private void SearchApps(string query, ConcurrentBag<SearchResult> results)
-    {
-        var lowerQuery = query.ToLowerInvariant().Replace(" ", "");
+private void SearchApps(string query, ConcurrentBag<SearchResult> results)
+{
+    var lowerQuery = query.ToLowerInvariant().Replace(" ", "");
 
-        foreach (var app in _appCache)
+    foreach (var app in _appCache)
+    {
+        if (MatchesApp(app.Name, lowerQuery))
         {
-            if (MatchesApp(app.Name, lowerQuery))
-                results.Add(app);
+            results.Add(new SearchResult
+            {
+                Name = app.Name,
+                Path = app.Path,
+                Type = app.Type,
+                Icon = app.Icon,
+                Query = query
+            });
         }
     }
+}
 
     private static bool MatchesApp(string appName, string lowerQuery)
     {

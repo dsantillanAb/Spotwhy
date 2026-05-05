@@ -18,26 +18,40 @@
         Title="SpotWhy"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True">
-    <Window.Resources>
-        <SolidColorBrush x:Key="ThemeBg" Color="#BE101014"/>
-        <SolidColorBrush x:Key="ThemeBorder" Color="#BE101014"/>
-        <SolidColorBrush x:Key="ThemeTextPrimary" Color="White"/>
-        <SolidColorBrush x:Key="ThemeTextSecondary" Color="#8CC8C8D2"/>
-        <SolidColorBrush x:Key="ThemeTextPlaceholder" Color="#55FFFFFF"/>
-        <SolidColorBrush x:Key="ThemeTextEmpty" Color="#3CFFFFFF"/>
-        <SolidColorBrush x:Key="ThemeItemHover" Color="#14FFFFFF"/>
-        <SolidColorBrush x:Key="ThemeItemSelected" Color="#28FFFFFF"/>
-        <SolidColorBrush x:Key="ThemeBadgeBg" Color="#10FFFFFF"/>
-        <SolidColorBrush x:Key="ThemeBadgeText" Color="#50C8C8D2"/>
-        <SolidColorBrush x:Key="ThemeSeparator" Color="#18FFFFFF"/>
-        <SolidColorBrush x:Key="ThemeIconBg" Color="#18FFFFFF"/>
-        <SolidColorBrush x:Key="ThemeIconPrimary" Color="#3CBE6E"/>
-        <SolidColorBrush x:Key="ThemeIconSecondary" Color="#8CDCAA"/>
-        <SolidColorBrush x:Key="ThemeIconStroke" Color="#1E8C46"/>
-        <SolidColorBrush x:Key="ThemeCaret" Color="White"/>
-        <converters:TypeToColorConverter x:Key="TypeToColorConverter"/>
-        <converters:TypeToSpanishConverter x:Key="TypeToSpanishConverter"/>
-    </Window.Resources>
+<Window.Resources>
+    <SolidColorBrush x:Key="ThemeBg" Color="#BE101014"/>
+    <SolidColorBrush x:Key="ThemeBorder" Color="#BE101014"/>
+    <SolidColorBrush x:Key="ThemeTextPrimary" Color="White"/>
+    <SolidColorBrush x:Key="ThemeTextSecondary" Color="#8CC8C8D2"/>
+    <SolidColorBrush x:Key="ThemeTextPlaceholder" Color="#55FFFFFF"/>
+    <SolidColorBrush x:Key="ThemeTextEmpty" Color="#3CFFFFFF"/>
+    <SolidColorBrush x:Key="ThemeItemHover" Color="#14FFFFFF"/>
+    <SolidColorBrush x:Key="ThemeItemSelected" Color="#28FFFFFF"/>
+    <SolidColorBrush x:Key="ThemeBadgeBg" Color="#10FFFFFF"/>
+    <SolidColorBrush x:Key="ThemeBadgeText" Color="#50C8C8D2"/>
+    <SolidColorBrush x:Key="ThemeSeparator" Color="#18FFFFFF"/>
+    <SolidColorBrush x:Key="ThemeIconBg" Color="#18FFFFFF"/>
+    <SolidColorBrush x:Key="ThemeIconPrimary" Color="#3CBE6E"/>
+    <SolidColorBrush x:Key="ThemeIconSecondary" Color="#8CDCAA"/>
+    <SolidColorBrush x:Key="ThemeIconStroke" Color="#1E8C46"/>
+    <SolidColorBrush x:Key="ThemeCaret" Color="White"/>
+    <converters:TypeToColorConverter x:Key="TypeToColorConverter"/>
+    <converters:TypeToSpanishConverter x:Key="TypeToSpanishConverter"/>
+    
+    <DataTemplate x:Key="HighlightTemplate">
+        <TextBlock FontSize="14"
+                   Foreground="{DynamicResource ThemeTextPrimary}"
+                   FontFamily="Segoe UI Variable Display, Segoe UI"
+                   TextTrimming="CharacterEllipsis">
+            <TextBlock.Text>
+                <MultiBinding Converter="{StaticResource HighlightConverter}">
+                    <Binding Path="Name"/>
+                    <Binding Path="Query"/>
+                </MultiBinding>
+            </TextBlock.Text>
+        </TextBlock>
+    </DataTemplate>
+</Window.Resources>
     <Border x:Name="ContentBorder" BorderThickness="0" CornerRadius="14"
             Background="{DynamicResource ThemeBg}" ClipToBounds="True">
         <Grid>
@@ -98,18 +112,23 @@
                 </Grid>
             </Border>
 
-            <!-- Results -->
-            <ListBox x:Name="ResultsList"
-                     Grid.Row="1"
-                     Background="Transparent"
-                     BorderThickness="0"
-                     Padding="0,4,0,8"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                     VirtualizingPanel.ScrollUnit="Item"
-                     SelectionChanged="ResultsList_SelectionChanged"
-                     PreviewKeyDown="ResultsList_PreviewKeyDown"
-                     MouseDoubleClick="ResultsList_MouseDoubleClick">
+<!-- Results -->
+<ListBox x:Name="ResultsList"
+Grid.Row="1"
+Background="Transparent"
+BorderThickness="0"
+Padding="0,4,0,8"
+ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+ScrollViewer.VerticalScrollBarVisibility="Hidden"
+VirtualizingPanel.IsVirtualizing="True"
+VirtualizingPanel.VirtualizationMode="Recycling"
+VirtualizingPanel.CacheLength="2"
+ScrollViewer.IsDeferredScrollingEnabled="True"
+VirtualizingPanel.ScrollUnit="Item"
+SelectionChanged="ResultsList_SelectionChanged"
+PreviewKeyDown="ResultsList_PreviewKeyDown"
+MouseDoubleClick="ResultsList_MouseDoubleClick"
+converters:HighlightBehavior.HighlightQuery="{Binding ElementName=SearchBox, Path=Text}">
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="ListBoxItem">
                         <Setter Property="Background" Value="Transparent"/>
@@ -129,43 +148,49 @@
                         </Style.Triggers>
                     </Style>
                 </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Height="36">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="32"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+<ListBox.ItemTemplate>
+    <DataTemplate>
+        <Grid Height="36">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="32"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-                            <Border Grid.Column="0" Width="28" Height="28" CornerRadius="6"
-                                    Background="{DynamicResource ThemeIconBg}"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Image Source="{Binding Icon}" Width="16" Height="16"
-                                       RenderOptions.BitmapScalingMode="HighQuality"
-                                       Margin="2"/>
-                            </Border>
+            <Border Grid.Column="0" Width="28" Height="28" CornerRadius="6"
+            Background="{DynamicResource ThemeIconBg}"
+            HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Image Source="{Binding Icon}" Width="16" Height="16"
+                RenderOptions.BitmapScalingMode="HighQuality"
+                Margin="2"/>
+            </Border>
 
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,10,0">
-                                <TextBlock Text="{Binding Name}" FontSize="14"
-                                           Foreground="{DynamicResource ThemeTextPrimary}"
-                                           FontFamily="Segoe UI Variable Display, Segoe UI"
-                                           TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{Binding DisplayPath}" FontSize="10"
-                                           Foreground="{DynamicResource ThemeTextSecondary}"
-                                           Margin="0,1,0,0"
-                                           TextTrimming="CharacterEllipsis" MaxHeight="12"/>
-                            </StackPanel>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,10,0">
+                <TextBlock FontSize="14"
+                Foreground="{DynamicResource ThemeTextPrimary}"
+                FontFamily="Segoe UI Variable Display, Segoe UI"
+                TextTrimming="CharacterEllipsis"
+                converters:HighlightBehavior.EnableHighlight="True"
+                converters:HighlightBehavior.HighlightQuery="{Binding Query}">
+                    <TextBlock.Text>
+                        <Binding Path="Name"/>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBlock Text="{Binding DisplayPath}" FontSize="10"
+                Foreground="{DynamicResource ThemeTextSecondary}"
+                Margin="0,1,0,0"
+                TextTrimming="CharacterEllipsis" MaxHeight="12"/>
+            </StackPanel>
 
-                                <Border Grid.Column="2" VerticalAlignment="Center" Margin="0,0,4,0"
-                                        Padding="6,2,6,2" CornerRadius="4"
-                                        Background="{Binding Type, Converter={StaticResource TypeToColorConverter}}">
-                                    <TextBlock Text="{Binding Type, Converter={StaticResource TypeToSpanishConverter}}" FontSize="10"
-                                               Foreground="White" FontWeight="SemiBold"/>
-                            </Border>
-                        </Grid>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
+            <Border Grid.Column="2" VerticalAlignment="Center" Margin="0,0,4,0"
+            Padding="6,2,6,2" CornerRadius="4"
+            Background="{Binding Type, Converter={StaticResource TypeToColorConverter}}">
+                <TextBlock Text="{Binding Type, Converter={StaticResource TypeToSpanishConverter}}" FontSize="10"
+                Foreground="White" FontWeight="SemiBold"/>
+            </Border>
+        </Grid>
+    </DataTemplate>
+</ListBox.ItemTemplate>
             </ListBox>
 
             <!-- Empty state -->
