@@ -1,0 +1,200 @@
+﻿<Window x:Class="SpotWhy.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:SpotWhy.Converters"
+        mc:Ignorable="d"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Width="680"
+        Height="Auto"
+        MaxHeight="540"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual"
+        Title="SpotWhy"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <Window.Resources>
+        <SolidColorBrush x:Key="ThemeBg" Color="#BE101014"/>
+        <SolidColorBrush x:Key="ThemeBorder" Color="#BE101014"/>
+        <SolidColorBrush x:Key="ThemeTextPrimary" Color="White"/>
+        <SolidColorBrush x:Key="ThemeTextSecondary" Color="#8CC8C8D2"/>
+        <SolidColorBrush x:Key="ThemeTextPlaceholder" Color="#55FFFFFF"/>
+        <SolidColorBrush x:Key="ThemeTextEmpty" Color="#3CFFFFFF"/>
+        <SolidColorBrush x:Key="ThemeItemHover" Color="#14FFFFFF"/>
+        <SolidColorBrush x:Key="ThemeItemSelected" Color="#28FFFFFF"/>
+        <SolidColorBrush x:Key="ThemeBadgeBg" Color="#10FFFFFF"/>
+        <SolidColorBrush x:Key="ThemeBadgeText" Color="#50C8C8D2"/>
+        <SolidColorBrush x:Key="ThemeSeparator" Color="#18FFFFFF"/>
+        <SolidColorBrush x:Key="ThemeIconBg" Color="#18FFFFFF"/>
+        <SolidColorBrush x:Key="ThemeIconPrimary" Color="#3CBE6E"/>
+        <SolidColorBrush x:Key="ThemeIconSecondary" Color="#8CDCAA"/>
+        <SolidColorBrush x:Key="ThemeIconStroke" Color="#1E8C46"/>
+        <SolidColorBrush x:Key="ThemeCaret" Color="White"/>
+        <converters:TypeToColorConverter x:Key="TypeToColorConverter"/>
+        <converters:TypeToSpanishConverter x:Key="TypeToSpanishConverter"/>
+    </Window.Resources>
+    <Border x:Name="ContentBorder" BorderThickness="0" CornerRadius="14"
+            Background="{DynamicResource ThemeBg}" ClipToBounds="True">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Search Bar -->
+            <Border x:Name="SearchBarBorder" Grid.Row="0" Height="52" Padding="20,0,20,0"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{DynamicResource ThemeSeparator}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Viewbox Grid.Column="0" Width="22" Height="22"
+                             Margin="0,0,12,0" VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            <Path Data="M19.84 11.51V3.67L12 .73L4.16 3.67v7.84H2.2v3.92l1.96.98v3.43L12 23.27l7.84-3.43v-3.43l1.96-.98v-3.92z"
+                                  Fill="{DynamicResource ThemeIconPrimary}"/>
+                            <Path Data="M4.16 5.63v2.94h15.68V5.63L12 2.69zm6.86 10.78h1.96l1.47 2.94h-4.9z"
+                                  Fill="{DynamicResource ThemeIconSecondary}"/>
+                            <Path Data="M11.02 16.41h1.96l1.47 2.94h-4.9zM7.1 10.53h2.94m3.43.49l1.47-.98l1.47.98m-12.25.49H2.2v3.92l1.96.98m15.68-4.9h1.96v3.92l-1.96.98m-4.9-3.92v.98m-5.88-.98v.98m-7.84-4.9h21.56"
+                                  Stroke="{DynamicResource ThemeIconStroke}"
+                                  StrokeThickness="1"
+                                  StrokeLineJoin="Round"/>
+                            <Path Data="M19.84 19.84L12 23.27l-7.84-3.43V3.67L12 .73l7.84 2.94z"
+                                  Stroke="{DynamicResource ThemeIconStroke}"
+                                  StrokeThickness="1"
+                                  StrokeLineJoin="Round"/>
+                        </Canvas>
+                    </Viewbox>
+
+                    <Grid Grid.Column="1">
+                        <TextBox x:Name="SearchBox"
+                                 FontSize="18"
+                                 FontFamily="Segoe UI Variable Display, Segoe UI"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{DynamicResource ThemeTextPrimary}"
+                                 CaretBrush="{DynamicResource ThemeCaret}"
+                                 IsUndoEnabled="False"
+                                 VerticalAlignment="Center"
+                                 TextChanged="SearchBox_TextChanged"
+                                 PreviewKeyDown="SearchBox_PreviewKeyDown"/>
+                        <TextBlock x:Name="PlaceholderText"
+                                   Text="Buscar con SpotWhy  ·  Ctrl + Espacio"
+                                   IsHitTestVisible="False"
+                                   Foreground="{DynamicResource ThemeTextPlaceholder}"
+                                   FontSize="18"
+                                   FontFamily="Segoe UI Variable Display, Segoe UI"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Results -->
+            <ListBox x:Name="ResultsList"
+                     Grid.Row="1"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Padding="0,4,0,8"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                     VirtualizingPanel.ScrollUnit="Item"
+                     SelectionChanged="ResultsList_SelectionChanged"
+                     PreviewKeyDown="ResultsList_PreviewKeyDown"
+                     MouseDoubleClick="ResultsList_MouseDoubleClick">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Margin" Value="6,1"/>
+                        <Setter Property="Padding" Value="10,7"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ThemeItemSelected}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ThemeItemHover}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Height="36">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Width="28" Height="28" CornerRadius="6"
+                                    Background="{DynamicResource ThemeIconBg}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Image Source="{Binding Icon}" Width="16" Height="16"
+                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                       Margin="2"/>
+                            </Border>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,10,0">
+                                <TextBlock Text="{Binding Name}" FontSize="14"
+                                           Foreground="{DynamicResource ThemeTextPrimary}"
+                                           FontFamily="Segoe UI Variable Display, Segoe UI"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding DisplayPath}" FontSize="10"
+                                           Foreground="{DynamicResource ThemeTextSecondary}"
+                                           Margin="0,1,0,0"
+                                           TextTrimming="CharacterEllipsis" MaxHeight="12"/>
+                            </StackPanel>
+
+                                <Border Grid.Column="2" VerticalAlignment="Center" Margin="0,0,4,0"
+                                        Padding="6,2,6,2" CornerRadius="4"
+                                        Background="{Binding Type, Converter={StaticResource TypeToColorConverter}}">
+                                    <TextBlock Text="{Binding Type, Converter={StaticResource TypeToSpanishConverter}}" FontSize="10"
+                                               Foreground="White" FontWeight="SemiBold"/>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- Empty state -->
+            <TextBlock x:Name="EmptyStateText"
+                       Grid.Row="1"
+                       Text="Escribe para empezar a buscar..."
+                       Foreground="{DynamicResource ThemeTextEmpty}"
+                       FontSize="14"
+                       FontFamily="Segoe UI Variable Display, Segoe UI"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False"
+                       Height="40"/>
+
+            <!-- Status Bar -->
+            <Border Grid.Row="2" Height="24" Padding="16,0,16,0"
+                    BorderThickness="0,1,0,0"
+                    BorderBrush="{DynamicResource ThemeSeparator}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" x:Name="MemoryText"
+                               FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
